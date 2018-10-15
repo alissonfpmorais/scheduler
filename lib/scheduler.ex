@@ -2,37 +2,35 @@ defmodule Scheduler do
   @moduledoc """
   """
 
-  # Scheduler.main(:fifo, 3, 6000, 8000)
-
   @doc """
   """
-  def main(type, num_procs) do
+  def main({type, options}, num_procs) do
     Scheduler.Generator.generator(num_procs)
-    |> scheduler(type)
+    |> scheduler(type, options)
   end
 
   @doc """
   """
-  def scheduler(queue, type) do
+  def scheduler(queue, type, options) do
     queue = Enum.sort(queue, &Scheduler.sort_by_arrival/2)
 
     case type do
-      :fcfs -> fcfs(queue)
-      :round_robin -> round_robin(queue, 2)
+      :fcfs -> fcfs(queue, options)
+      :round_robin -> round_robin(queue, options)
     end
   end
 
   @doc """
   """
-  def fcfs(queue) do
-    IO.puts("")
-    Enum.each(queue, &Scheduler.resolve_fcfs/1)
-    IO.puts("|>")
+  def fcfs(queue, _options) do
+    ([""] ++ Enum.map(queue, &Scheduler.resolve_fcfs/1))
+    |> Enum.concat(["|>"])
+    |> Enum.each(&IO.puts/1)
   end
 
   @doc """
   """
-  def round_robin(queue, quantum) do
+  def round_robin(queue, [quantum: quantum] = options) do
     IO.puts("")
     case length(queue) do
       0 -> IO.puts("|>")
@@ -40,7 +38,7 @@ defmodule Scheduler do
         queue
         |> Enum.map(fn item -> step_run_proc(item, quantum) end)
         |> Enum.filter(&Scheduler.filter_by_finished/1)
-        |> round_robin(quantum)
+        |> round_robin(options)
     end
   end
 
@@ -48,7 +46,9 @@ defmodule Scheduler do
   """
   def step_run_proc(%Scheduler.Proc{burst_time: burst_time} = proc, quantum) do
     burst_left = max(0, burst_time - quantum)
+
     resolve_rr(proc, burst_time - burst_left)
+    |> IO.puts
 
     %Scheduler.Proc{proc | burst_time: burst_left}
   end
@@ -66,7 +66,7 @@ defmodule Scheduler do
     computation = "(value: #{value}, process: #{process(value)}, arrival: #{arrival_time}, burst: #{burst_time})"
     count_time = String.duplicate("-", burst_time)
 
-    IO.puts("|#{pid}#{computation}#{count_time}>")
+    "|#{pid}#{computation}#{count_time}>"
   end
 
   @doc """
@@ -76,7 +76,7 @@ defmodule Scheduler do
     computation = "(value: #{value}, process: #{process(value)}, arrival: #{arrival_time}, burst: #{burst_time}, running: #{running_time})"
     count_time = String.duplicate("-", running_time)
 
-    IO.puts("|#{pid}#{computation}#{count_time}>")
+    "|#{pid}#{computation}#{count_time}>"
   end
 
   @doc """
@@ -88,6 +88,6 @@ defmodule Scheduler do
   @doc """
   """
   def process(value) do
-    value * 131
+    value * 100
   end
 end
