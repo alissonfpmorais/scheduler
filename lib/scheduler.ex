@@ -4,25 +4,26 @@ defmodule Scheduler do
 
   @doc """
   """
-  def main({type, options}, num_procs) do
+  def main(algorithm, num_procs) do
     Scheduler.Generator.generator(num_procs)
-    |> scheduler(type, options)
+    |> scheduler(algorithm)
   end
 
   @doc """
   """
-  def scheduler(queue, type, options) do
+  def scheduler(queue, algorithm) do
     queue = Enum.sort(queue, &Scheduler.sort_by_arrival/2)
 
-    case type do
-      :fcfs -> fcfs(queue, options)
-      :round_robin -> round_robin(queue, options)
+    case algorithm do
+      {:fcfs, _options} -> fcfs(queue)
+      {:round_robin, [quantum: quantum]} -> round_robin(queue, quantum)
+      _ -> raise("SchedulerTypeError: This algorithm isn't available!")
     end
   end
 
   @doc """
   """
-  def fcfs(queue, _options) do
+  def fcfs(queue) do
     ([""] ++ Enum.map(queue, &Scheduler.resolve_fcfs/1))
     |> Enum.concat(["|>"])
     |> Enum.each(&IO.puts/1)
@@ -30,7 +31,7 @@ defmodule Scheduler do
 
   @doc """
   """
-  def round_robin(queue, [quantum: quantum] = options) do
+  def round_robin(queue, quantum) do
     IO.puts("")
     case length(queue) do
       0 -> IO.puts("|>")
@@ -38,7 +39,7 @@ defmodule Scheduler do
         queue
         |> Enum.map(fn item -> step_run_proc(item, quantum) end)
         |> Enum.filter(&Scheduler.filter_by_finished/1)
-        |> round_robin(options)
+        |> round_robin(quantum)
     end
   end
 
