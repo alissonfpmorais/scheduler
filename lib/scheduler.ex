@@ -25,7 +25,7 @@ defmodule Scheduler do
   """
   def fcfs(queue) do
     ([""] ++ Enum.map(queue, &Scheduler.resolve_fcfs/1))
-    |> Enum.concat(["|>"])
+    |> Enum.concat(["", "|>"])
     |> Enum.each(&IO.puts/1)
   end
 
